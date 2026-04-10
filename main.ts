@@ -1,6 +1,5 @@
 //% weight=100 color=#2E86AB icon="\uf5fc"
-namespace Educacao_Joinville {
-}
+namespace Educacao_Joinville { }
 
 /* =========================
    📟 LCD
@@ -10,13 +9,17 @@ namespace EJ_LCD {
 
     let endereco = 0x27
 
-    function cmd(valor: number) {
-        pins.i2cWriteNumber(endereco, valor, NumberFormat.UInt8BE)
+    //% block="configurar LCD endereço %addr"
+    export function configurar(addr: number) {
+        endereco = addr
+    }
+
+    function cmd(c: number) {
+        pins.i2cWriteNumber(endereco, c, NumberFormat.UInt8BE)
         basic.pause(5)
     }
 
     //% block="iniciar LCD"
-    //% group="LCD"
     export function iniciar() {
         cmd(0x38)
         cmd(0x0C)
@@ -25,43 +28,32 @@ namespace EJ_LCD {
     }
 
     //% block="limpar LCD"
-    //% group="LCD"
     export function limpar() {
         cmd(0x01)
-        basic.pause(5)
     }
 
-    //% block="mostrar %texto na linha %linha coluna %coluna"
-    //% group="LCD"
-    export function mostrar(texto: string, linha: number, coluna: number) {
-        let pos = linha == 1 ? 0x80 + coluna : 0xC0 + coluna
+    //% block="mostrar %txt linha %l coluna %c"
+    export function mostrar(txt: string, l: number, c: number) {
+        let pos = l == 1 ? 0x80 + c : 0xC0 + c
         cmd(pos)
-        for (let i = 0; i < texto.length; i++) {
-            pins.i2cWriteNumber(endereco, texto.charCodeAt(i), NumberFormat.UInt8BE)
+
+        for (let i = 0; i < txt.length; i++) {
+            pins.i2cWriteNumber(endereco, txt.charCodeAt(i), NumberFormat.UInt8BE)
         }
     }
 
-    //% block="exibir mensagem longa %texto na linha %linha velocidade %velocidade (ms)"
-    //% group="LCD"
-    export function scrollText(texto: string, linha: number, velocidade: number): void {
-
-        let largura = 16
-
-        if (texto.length <= largura) {
-            mostrar(texto, linha, 0)
+    //% block="rolar %txt linha %l velocidade %v"
+    export function rolar(txt: string, l: number, v: number) {
+        if (txt.length <= 16) {
+            mostrar(txt, l, 0)
             return
         }
 
-        for (let i = 0; i <= texto.length - largura; i++) {
-
-            let parte = texto.substr(i, largura)
-
-            mostrar(parte, linha, 0)
-
-            basic.pause(velocidade)
+        for (let i = 0; i <= txt.length - 16; i++) {
+            mostrar(txt.substr(i, 16), l, 0)
+            basic.pause(v)
         }
 
-        basic.pause(velocidade * 2)
         limpar()
     }
 }
@@ -72,46 +64,33 @@ namespace EJ_LCD {
 //% weight=95 color=#34495E icon="\uf1b9"
 namespace EJ_Motores {
 
-    let m1a = AnalogPin.P0
-    let m1b = AnalogPin.P1
-    let m2a = AnalogPin.P2
-    let m2b = AnalogPin.P8
+    let m1a: AnalogPin
+    let m1b: AnalogPin
+    let m2a: AnalogPin
+    let m2b: AnalogPin
 
-    function motor(pin1: AnalogPin, pin2: AnalogPin, vel: number) {
-        if (vel >= 0) {
-            pins.analogWritePin(pin1, vel * 10)
-            pins.analogWritePin(pin2, 0)
+    //% block="configurar motores %a1 %b1 %a2 %b2"
+    export function configurar(a1: AnalogPin, b1: AnalogPin, a2: AnalogPin, b2: AnalogPin) {
+        m1a = a1; m1b = b1; m2a = a2; m2b = b2
+    }
+
+    function motor(p1: AnalogPin, p2: AnalogPin, v: number) {
+        if (v >= 0) {
+            pins.analogWritePin(p1, v * 10)
+            pins.analogWritePin(p2, 0)
         } else {
-            pins.analogWritePin(pin1, 0)
-            pins.analogWritePin(pin2, -vel * 10)
+            pins.analogWritePin(p1, 0)
+            pins.analogWritePin(p2, -v * 10)
         }
     }
 
-    //% block="frente velocidade %vel"
-    export function frente(vel: number) {
-        motor(m1a, m1b, vel)
-        motor(m2a, m2b, vel)
+    //% block="frente %v"
+    export function frente(v: number) {
+        motor(m1a, m1b, v)
+        motor(m2a, m2b, v)
     }
 
-    //% block="ré velocidade %vel"
-    export function tras(vel: number) {
-        motor(m1a, m1b, -vel)
-        motor(m2a, m2b, -vel)
-    }
-
-    //% block="esquerda velocidade %vel"
-    export function esquerda(vel: number) {
-        motor(m1a, m1b, -vel)
-        motor(m2a, m2b, vel)
-    }
-
-    //% block="direita velocidade %vel"
-    export function direita(vel: number) {
-        motor(m1a, m1b, vel)
-        motor(m2a, m2b, -vel)
-    }
-
-    //% block="parar motores"
+    //% block="parar"
     export function parar() {
         motor(m1a, m1b, 0)
         motor(m2a, m2b, 0)
@@ -119,160 +98,182 @@ namespace EJ_Motores {
 }
 
 /* =========================
-   🚗 SEGUIDOR DE LINHA
+   🚗 LINHA
 ========================= */
 //% weight=90 color=#E74C3C icon="\uf1b9"
 namespace EJ_Linha {
 
-    //% block="seguir linha esq %esq dir %dir"
-    export function seguirLinha(esq: DigitalPin, dir: DigitalPin) {
+    //% block="seguir linha %e %d"
+    export function seguir(e: DigitalPin, d: DigitalPin) {
 
-        let esquerda = pins.digitalReadPin(esq)
-        let direita = pins.digitalReadPin(dir)
+        let esq = pins.digitalReadPin(e)
+        let dir = pins.digitalReadPin(d)
 
-        if (esquerda == 0 && direita == 0) {
-            EJ_Motores.frente(80)
-        } else if (esquerda == 0 && direita == 1) {
-            EJ_Motores.esquerda(70)
-        } else if (esquerda == 1 && direita == 0) {
-            EJ_Motores.direita(70)
-        } else {
-            EJ_Motores.parar()
-        }
+        if (esq == 0 && dir == 0) EJ_Motores.frente(80)
+        else EJ_Motores.parar()
     }
 }
 
 /* =========================
-   📏 DISTÂNCIA
+   🧪 SENSORES
 ========================= */
-//% weight=80 color=#9B59B6 icon="\uf2c2"
-namespace EJ_Distancia {
+//% weight=85 color=#3498DB
+namespace EJ_Sensores {
 
-    //% block="distância trig %trig echo %echo (cm)"
-    export function distancia(trig: DigitalPin, echo: DigitalPin): number {
+    //% block="digital %p"
+    export function digital(p: DigitalPin) {
+        return pins.digitalReadPin(p)
+    }
 
-        pins.digitalWritePin(trig, 0)
+    //% block="analógico %p"
+    export function analogico(p: AnalogPin) {
+        return pins.analogReadPin(p)
+    }
+}
+
+/* =========================
+   📏 ULTRASSÔNICO
+========================= */
+//% weight=85 color=#9B59B6
+namespace EJ_Ultrassonico {
+
+    //% block="distância %t %e"
+    export function distancia(t: DigitalPin, e: DigitalPin) {
+
+        pins.digitalWritePin(t, 0)
         control.waitMicros(2)
 
-        pins.digitalWritePin(trig, 1)
+        pins.digitalWritePin(t, 1)
         control.waitMicros(10)
-        pins.digitalWritePin(trig, 0)
+        pins.digitalWritePin(t, 0)
 
-        let d = pins.pulseIn(echo, PulseValue.High, 500 * 58)
-
-        return Math.round(d / 58)
+        let tempo = pins.pulseIn(e, PulseValue.High)
+        return Math.round(tempo / 58)
     }
 }
 
 /* =========================
-   🌡️ ANALÓGICOS
+   🌡️ DHT
 ========================= */
-//% weight=80 color=#E67E22 icon="\uf043"
-namespace EJ_SensoresAnalogicos {
-
-    //% block="luz %pin"
-    export function luz(pin: AnalogPin): number {
-        return pins.map(pins.analogReadPin(pin), 0, 1023, 0, 100)
-    }
-
-    //% block="umidade solo %pin"
-    export function solo(pin: AnalogPin): number {
-        return pins.map(pins.analogReadPin(pin), 0, 1023, 0, 100)
-    }
-}
-
-/* =========================
-   🔘 DIGITAIS
-========================= */
-//% weight=80 color=#3498DB icon="\uf085"
-namespace EJ_SensoresDigitais {
-
-    //% block="toque %pin"
-    export function toque(pin: DigitalPin): number {
-        return pins.digitalReadPin(pin)
-    }
-
-    //% block="vibração %pin"
-    export function vibracao(pin: DigitalPin): number {
-        return pins.digitalReadPin(pin)
-    }
-}
-
-/* =========================
-   🌍 AMBIENTE
-========================= */
-//% weight=70 color=#16A085 icon="\uf06c"
+//% weight=80 color=#16A085
 namespace EJ_Ambiente {
 
-    let temp = 0
-    let umi = 0
+    let t = 0
+    let u = 0
 
-    //% block="ler ambiente %pin"
-    export function ler(pin: DigitalPin) {
-        temp = input.temperature()
-        umi = 50
+    //% block="ler DHT %p"
+    export function ler(p: DigitalPin) {
+
+        let dados: number[] = []
+
+        pins.digitalWritePin(p, 0)
+        basic.pause(18)
+        pins.setPull(p, PinPullMode.PullUp)
+
+        while (pins.digitalReadPin(p) == 1);
+        while (pins.digitalReadPin(p) == 0);
+        while (pins.digitalReadPin(p) == 1);
+
+        for (let i = 0; i < 40; i++) {
+            while (pins.digitalReadPin(p) == 0);
+            let tempo = pins.pulseIn(p, PulseValue.High)
+            dados.push(tempo > 40 ? 1 : 0)
+        }
+
+        u = dados[0] * 10 + dados[1]
+        t = dados[2] * 10 + dados[3]
     }
 
     //% block="temperatura"
-    export function temperatura(): number {
-        return temp
-    }
+    export function temperatura() { return t }
 
     //% block="umidade"
-    export function umidade(): number {
-        return umi
+    export function umidade() { return u }
+}
+
+/* =========================
+   🔢 TECLADO
+========================= */
+//% weight=80 color=#2ECC71
+namespace EJ_Teclado {
+
+    let l: DigitalPin[] = []
+    let c: DigitalPin[] = []
+
+    let mapa = [
+        ["1", "2", "3", "A"],
+        ["4", "5", "6", "B"],
+        ["7", "8", "9", "C"],
+        ["*", "0", "#", "D"]
+    ]
+
+    //% block="configurar teclado"
+    export function configurar(l1: DigitalPin, l2: DigitalPin, l3: DigitalPin, l4: DigitalPin,
+        c1: DigitalPin, c2: DigitalPin, c3: DigitalPin, c4: DigitalPin) {
+
+        l = [l1, l2, l3, l4]
+        c = [c1, c2, c3, c4]
+    }
+
+    //% block="ler tecla"
+    export function ler(): string {
+
+        for (let i = 0; i < 4; i++) {
+            pins.digitalWritePin(l[i], 0)
+
+            for (let j = 0; j < 4; j++) {
+                if (pins.digitalReadPin(c[j]) == 0) {
+                    basic.pause(200)
+                    return mapa[i][j]
+                }
+            }
+
+            pins.digitalWritePin(l[i], 1)
+        }
+
+        return ""
     }
 }
 
 /* =========================
-   🎨 COR
+   📡 NFC (BASE FUNCIONAL)
 ========================= */
-//% weight=70 color=#F1C40F icon="\uf53f"
+//% weight=80 color=#34495E
+namespace EJ_NFC {
+
+    let addr = 0x24
+
+    //% block="configurar NFC %a"
+    export function configurar(a: number) {
+        addr = a
+    }
+
+    //% block="ler NFC"
+    export function ler(): number {
+        return pins.i2cReadNumber(addr, NumberFormat.UInt8BE)
+    }
+}
+
+/* =========================
+   🎨 COR (BASE)
+========================= */
+//% weight=80 color=#F1C40F
 namespace EJ_Cor {
 
-    //% block="detectar cor"
-    export function cor(): string {
-        let v = input.lightLevel()
-
-        if (v < 50) return "Preto"
-        if (v < 100) return "Azul"
-        if (v < 150) return "Verde"
-        return "Branco"
+    //% block="nível de luz"
+    export function luz() {
+        return input.lightLevel()
     }
 }
 
 /* =========================
    👋 GESTOS
 ========================= */
-//% weight=70 color=#8E44AD icon="\uf0a6"
+//% weight=80 color=#8E44AD
 namespace EJ_Gestos {
 
     //% block="quando agitar"
-    export function aoAgitar(handler: () => void) {
+    export function agitar(handler: () => void) {
         input.onGesture(Gesture.Shake, handler)
-    }
-}
-
-/* =========================
-   🔢 TECLADO
-========================= */
-//% weight=60 color=#2ECC71 icon="\uf11c"
-namespace EJ_Teclado {
-
-    //% block="tecla %pin"
-    export function tecla(pin: DigitalPin): number {
-        return pins.digitalReadPin(pin)
-    }
-}
-
-/* =========================
-   📡 NFC (BASE)
-========================= */
-//% weight=60 color=#34495E icon="\uf02a"
-namespace EJ_NFC {
-
-    //% block="ler NFC"
-    export function ler(): number {
-        return 1
     }
 }
