@@ -1,5 +1,6 @@
 {
     "name": "Educacao-Joinville-SC",
+    "version": "1.0.0",
     "description": "",
     "dependencies": {
         "core": "*",
