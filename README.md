@@ -1,24 +1,35 @@
+# Educação Joinville
 
-> Abrir essa página em [https://marcelosestrem.github.io/educacao-joinville-sc/](https://marcelosestrem.github.io/educacao-joinville-sc/)
+Biblioteca oficial para micro:bit utilizada na Rede Municipal de Ensino de Joinville.
 
-## Usar como extensão
+## Recursos
 
-Este repositório pode ser adicionado como **extensão** no MakeCode.
+- LCD 16x2 (I2C)
+- Motores (robótica)
+- Seguidor de linha
+- Sensores (analógicos e digitais)
+- DHT11/DHT22 (temperatura e umidade)
+- Teclado 4x4
+- NFC PN532
+- Sensor de cor
+- Sensor de gestos
 
-* abrir [https://makecode.microbit.org/](https://makecode.microbit.org/)
-* clique em **Novo Projeto**
-* clique em **Extensões** em baixo do menu com ícone de engrenagem
-* procure por **https://github.com/marcelosestrem/educacao-joinville-sc** e importe
+## Instalação
 
-## Editar este projeto
+1. Acesse: https://makecode.microbit.org/
+2. Clique em **Extensões**
+3. Cole o link do repositório
 
-Para editar este repositório no MakeCode.
+## Público-alvo
 
-* abrir [https://makecode.microbit.org/](https://makecode.microbit.org/)
-* clique em **Importar** e depois clique em **Importar URL**
-* cole **https://github.com/marcelosestrem/educacao-joinville-sc** e clique em importar
+- Ensino Fundamental II
+- Ensino Médio
+- Formação de professores
 
-#### Metadados (usados para pesquisa, renderização)
+## Objetivo
 
-* for PXT/microbit
-<script src="https://makecode.com/gh-pages-embed.js"></script><script>makeCodeRender("{{ site.makecode.home_url }}", "{{ site.github.owner_name }}/{{ site.github.repository_name }}");</script>
+Desenvolver pensamento computacional, robótica e cultura digital de forma prática e interdisciplinar.
+
+---
+
+Desenvolvido para a Educação Pública de Joinville
